@@ -2793,14 +2793,31 @@ int irdma_destroy_ah(struct ib_ah *ibah, u32 ah_flags)
 	spin_lock(&iwdev->ah_tbl_lock);
 	ah->parent_ah->refcnt--;
 	if (!ah->parent_ah->refcnt) {
-		/* Last ref dropped, add to deferred delete list. */
-		list_add_tail(&ah->parent_ah->node, &iwdev->ah_deletion_list);
-		iwdev->ah_deletion_list_cnt++;
-		iwdev->ah_deletion_list_cnt_total++;
-		if (iwdev->ah_deletion_list_cnt > iwdev->ah_deletion_list_cnt_peak) {
-			iwdev->ah_deletion_list_cnt_peak = iwdev->ah_deletion_list_cnt;
+		if (ah_deferred_deletion) {
+			/* Last ref dropped, add to deferred delete list. */
+			list_add_tail(&ah->parent_ah->node, &iwdev->ah_deletion_list);
+			iwdev->ah_deletion_list_cnt++;
+			iwdev->ah_deletion_list_cnt_total++;
+			if (iwdev->ah_deletion_list_cnt > iwdev->ah_deletion_list_cnt_peak) {
+				iwdev->ah_deletion_list_cnt_peak = iwdev->ah_deletion_list_cnt;
+			}
+			ah->parent_ah->deletion_timestamp = ktime_get_raw_ns();
 		}
-		ah->parent_ah->deletion_timestamp = ktime_get_raw_ns();
+		else {
+			printk(KERN_INFO, "ah_deferred_deletion is set to false. Destroying AH".)
+			irdma_ah_cqp_op(iwdev->rf, &ah->sc_ah, IRDMA_OP_AH_DESTROY,
+				false, NULL, ah);
+
+			irdma_free_rsrc(iwdev->rf, iwdev->rf->allocated_ahs,
+				ah->sc_ah.ah_info.ah_idx);
+
+			hash_del(&ah->list);
+			iwdev->ah_list_cnt--;
+			iwdev->ah_deletion_list_cnt--;
+			list_del(&ah->node);
+			kfree(ah->parent_ah);
+
+		}
 	}
 	spin_unlock(&iwdev->ah_tbl_lock);
 

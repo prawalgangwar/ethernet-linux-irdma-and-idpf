@@ -65,6 +65,9 @@ extern bool irdma_upload_context;
 #define MEV_PCI_VER_B0	16
 #define MEV_PCI_VER_C0	32
 
+static u8 ah_deferred_delete = 1;
+
+
 extern bool irdma_rca_ena;
 extern bool irdma_rca_rq_post;
 extern bool irdma_rca_rq_polarity;

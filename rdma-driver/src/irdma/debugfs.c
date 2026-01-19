@@ -89,6 +89,7 @@ static void dump_help(void)
 	dbg_vsnprintf(" cqp-nop\n");
 	dbg_vsnprintf(" cqp-rq\n");
 	dbg_vsnprintf(" pokecq <n>\n");
+	dbg_vsnprintf(" ah-deferred-deletion <n>   <n> is 0 or 1\n");
 	cmddone = true;
 }
 
@@ -1276,6 +1277,14 @@ static ssize_t irdma_dbg_dump_read(struct file *filp,
 			irdma_cqp_nop(&rf->sc_dev);
 		else if (strncasecmp(cmd_buf, "cqp-rq", 6) == 0)
 			irdma_cqp_rca_post_rqes(&rf->sc_dev);
+		else if (strncasecmp(cmd_buf, "ah-deferred-deletion", 20) == 0)
+		{
+			printk(KERN_INFO, "ah-deferred-deletion detected\n");
+			int state;
+			sscanf(cmd_buf, "%10s%n", cqstr, &state);
+			ah_deferred_delete = state;
+			printk(KERN_INFO, "ah-deferred-deletion set to %d\n", ah_deferred_delete);
+		}
 		else
 			dump_help();
 		cmdnew = false;
